@@ -23,7 +23,7 @@ static int do_wdt_list(struct cmd_tbl *cmdtp, int flag, int argc,
 		return CMD_RET_FAILURE;
 
 	uclass_foreach_dev(dev, uc)
-		printf("%s (%s)\n", dev->name, dev->driver->name);
+		printf("[%d] %s (%s)\n", dev_seq(dev), dev->name, dev->driver->name);
 
 	return CMD_RET_SUCCESS;
 }
@@ -31,10 +31,13 @@ static int do_wdt_list(struct cmd_tbl *cmdtp, int flag, int argc,
 static int do_wdt_dev(struct cmd_tbl *cmdtp, int flag, int argc,
 		      char *const argv[])
 {
-	int ret;
+	int ret, seq;
+	char *endp;
 
 	if (argc > 1) {
-		ret = uclass_get_device_by_name(UCLASS_WDT, argv[1], &currdev);
+		seq = simple_strtol(argv[1], &endp, 10);
+		ret = *endp ? uclass_get_device_by_name(UCLASS_WDT, argv[1], &currdev)
+			: uclass_get_device_by_seq(UCLASS_WDT, seq, &currdev);
 		if (ret) {
 			printf("Can't get the watchdog timer: %s\n", argv[1]);
 			return CMD_RET_FAILURE;
@@ -44,7 +47,7 @@ static int do_wdt_dev(struct cmd_tbl *cmdtp, int flag, int argc,
 			printf("No watchdog timer device set!\n");
 			return CMD_RET_FAILURE;
 		}
-		printf("dev: %s\n", currdev->name);
+		printf("dev: %s [%d]\n", currdev->name, dev_seq(currdev));
 	}
 
 	return CMD_RET_SUCCESS;
